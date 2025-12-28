@@ -12,47 +12,48 @@ import java.util.List;
 @Service
 public class ProductService {
 
-    private final ProductRepository repo;
+    private final ProductRepository productRepository;
 
-    public ProductService(ProductRepository repo) {
-        this.repo = repo;
-    }
-
-    public ProductResponse create(ProductRequest request) {
-        Product p = new Product(request.getName(), request.getPrice(), request.getStock());
-        Product saved = repo.save(p);
-        return toResponse(saved);
+    public ProductService(ProductRepository productRepository) {
+        this.productRepository = productRepository;
     }
 
     public List<ProductResponse> getAll() {
-        return repo.findAll().stream().map(this::toResponse).toList();
+        return productRepository.findAll().stream().map(this::map).toList();
     }
 
     public ProductResponse getById(Long id) {
-        Product p = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
-        return toResponse(p);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+        return map(product);
+    }
+
+    public ProductResponse create(ProductRequest request) {
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        return map(productRepository.save(product));
     }
 
     public ProductResponse update(Long id, ProductRequest request) {
-        Product p = repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Product not found: " + id));
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
-        p.setName(request.getName());
-        p.setPrice(request.getPrice());
-        p.setStock(request.getStock());
+        product.setName(request.getName());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
 
-        return toResponse(repo.save(p));
+        return map(productRepository.save(product));
     }
 
     public void delete(Long id) {
-        if (!repo.existsById(id)) {
-            throw new ResourceNotFoundException("Product not found: " + id);
-        }
-        repo.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
+        productRepository.delete(product);
     }
 
-    private ProductResponse toResponse(Product p) {
-        return new ProductResponse(p.getId(), p.getName(), p.getPrice(), p.getStock());
+    private ProductResponse map(Product product) {
+        return new ProductResponse(product.getId(), product.getName(), product.getPrice(), product.getStock());
     }
 }
